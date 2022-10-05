@@ -1,0 +1,63 @@
+<div id="regions_div" style="width: 900px; height: 500px;"></div>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/javascript">
+  google.charts.load('current', {
+    'packages':['geochart'],
+    'mapsApiKey': '{{ site.google_maps_javascript_api_key }}'
+  });
+  google.charts.setOnLoadCallback(drawRegionsMap);
+  
+  const zoomLevel = {
+    continent: 0,
+    subContinent: 1,
+    country: 2,
+    city: 3,
+  }
+
+  const tryZoomMap = "{{ include.tryZoomMap }}" === "true";
+  let showCities = "{{ include.showCities }}" === "true";
+  let locations = "{{ include.locations}}".split("|");
+
+  locations = locations.map(x => { 
+    const y = x.split("_");
+    return [y[0], y[1], y[2], `${y[2]} ${y[3]}`];
+  });
+
+  let region =  tryZoomMap ? getMapRegion(locations) : null;
+  
+  // show the smallest map possible for the supplied data
+  function getMapRegion(locations, zoom = zoomLevel.continent) {
+    const region = [...new Set(locations.map(x => x[zoom]))]
+    if (region.length === 1){
+      if (zoom < zoomLevel.country) {
+        return getMapRegion(locations, zoom + 1) ?? region[0];
+      }
+      // override showCities if multiple locations within a country
+      if (!showCities && locations.length > 1 && zoom == zoomLevel.country) {
+        showCities = true;
+      }
+      return region[0];
+    }
+    return null;
+  }
+
+  function drawRegionsMap() {
+    var data = google.visualization.arrayToDataTable([
+      ['Country'],
+      ...locations.map(x => [x[showCities ? zoomLevel.city : zoomLevel.country]])
+    ]);
+    
+    var options = {};
+
+    if (region !== null){
+      options.region = region;
+    }
+    if (showCities) {
+      options.displayMode = 'markers';
+    }
+
+    var chart = new google.visualization.GeoChart(document.getElementById('regions_div'));
+
+    chart.draw(data, options);
+  }
+</script>

@@ -1,0 +1,20 @@
+---
+layout: default
+---
+{% assign filtered_trips = site.categories.trip | where_exp: 'x', 'x.people contains page.short_name' | sort: 'trip-date' %}
+
+{% for trip in filtered_trips %}
+{% assign locationsVisited = locationsVisited | concat: trip.locations | uniq %}
+{% endfor %}
+{% assign locationsVisited = locationsVisited | join: "|" %}
+
+<h1>{{ page.name }}</h1>
+
+{% include google-geoCharts.html locations=locationsVisited tryZoomMap=true showCities=false %}
+
+<h3>Trips</h3>
+<ul>
+  {% for trip in filtered_trips %}
+    <li><a href="{{ trip.url }}">{{ trip.title }}</a></li>
+  {% endfor %}
+</ul>
